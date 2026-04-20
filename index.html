@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Study</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f6f8fa;
+      color: #1f2328;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #d0d7de;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 600;
+    }
+
+    header span {
+      font-size: 13px;
+      color: #656d76;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 24px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #656d76;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #d0d7de;
+      border-radius: 8px;
+      padding: 20px;
+      text-decoration: none;
+      color: inherit;
+      transition: box-shadow 0.15s, border-color 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-color: #0969da;
+    }
+
+    .card-icon {
+      font-size: 24px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0969da;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: #656d76;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #ddf4ff;
+      color: #0969da;
+      font-weight: 500;
+      align-self: flex-start;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>AI Study</h1>
+  <span>학습 자료 모음</span>
+</header>
+
+<div class="container">
+  <p class="section-title">프레젠테이션</p>
+  <div class="card-grid">
+
+    <a class="card" href="claude_code_tokens.html">
+      <div class="card-icon">🪙</div>
+      <div class="card-title">Claude Code 토큰 가이드</div>
+      <div class="card-desc">Claude Code에서 토큰이 어떻게 사용되는지 기초 개념을 정리한 가이드</div>
+      <span class="badge">Claude Code</span>
+    </a>
+
+    <a class="card" href="claude_tokens_advanced.html">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Claude 토큰 심화 가이드</div>
+      <div class="card-desc">토큰 최적화, 프롬프트 캐싱 등 심화 개념을 다루는 가이드</div>
+      <span class="badge">Claude Code</span>
+    </a>
+
+  </div>
+</div>
+
+</body>
+</html>
