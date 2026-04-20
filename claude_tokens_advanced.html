@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude 토큰 심화 가이드</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #080b14;
+      color: #e2e8f0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .deck { width: 100%; height: 100vh; position: relative; }
+
+    .slide {
+      display: none;
+      position: absolute;
+      inset: 0;
+      padding: 48px 72px 80px;
+      flex-direction: column;
+      justify-content: center;
+      animation: fadeIn 0.35s ease;
+      overflow: hidden;
+    }
+    .slide.active { display: flex; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* themes */
+    .t-cover  { background: radial-gradient(ellipse at 20% 50%, #0d1f3c 0%, #080b14 60%); }
+    .t-blue   { background: radial-gradient(ellipse at 80% 20%, #0a1628 0%, #080b14 70%); }
+    .t-green  { background: radial-gradient(ellipse at 20% 80%, #071a0f 0%, #080b14 70%); }
+    .t-purple { background: radial-gradient(ellipse at 80% 80%, #130d24 0%, #080b14 70%); }
+    .t-orange { background: radial-gradient(ellipse at 50% 20%, #1a0f05 0%, #080b14 70%); }
+    .t-teal   { background: radial-gradient(ellipse at 20% 50%, #061a1a 0%, #080b14 70%); }
+
+    /* typography */
+    .eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: 3px;
+      text-transform: uppercase; color: #4a9eff; margin-bottom: 14px;
+    }
+    h1 {
+      font-size: 56px; font-weight: 900; line-height: 1.1;
+      background: linear-gradient(135deg, #4a9eff 0%, #a78bfa 50%, #34d399 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 18px;
+    }
+    h2 {
+      font-size: 32px; font-weight: 700; color: #f1f5f9;
+      margin-bottom: 28px; display: flex; align-items: center; gap: 10px;
+    }
+    .subtitle { font-size: 18px; color: #64748b; line-height: 1.7; max-width: 640px; }
+
+    /* layout */
+    .cols { display: grid; gap: 24px; }
+    .c2 { grid-template-columns: 1fr 1fr; }
+    .c3 { grid-template-columns: 1fr 1fr 1fr; }
+    .c4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+    /* cards */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px; padding: 22px;
+    }
+    .card-sm { padding: 16px 18px; border-radius: 10px; }
+    .ct { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+    .cv { font-size: 34px; font-weight: 800; line-height: 1.1; }
+    .cd { font-size: 13px; color: #64748b; margin-top: 6px; line-height: 1.5; }
+
+    /* token type blocks */
+    .token-block {
+      border-radius: 12px; padding: 18px 20px;
+      border-left: 3px solid;
+      background: rgba(255,255,255,0.03);
+    }
+    .token-block .tb-label { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+    .token-block .tb-name  { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .token-block .tb-desc  { font-size: 13px; color: #94a3b8; line-height: 1.5; }
+    .token-block .tb-price { font-size: 13px; font-weight: 600; margin-top: 8px; }
+
+    /* table */
+    .tbl { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+    .tbl thead th {
+      background: rgba(74,158,255,0.1); color: #4a9eff;
+      padding: 9px 14px; text-align: left;
+      font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .tbl thead th:first-child { border-radius: 8px 0 0 0; }
+    .tbl thead th:last-child  { border-radius: 0 8px 0 0; }
+    .tbl td { padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #cbd5e1; }
+    .tbl tr:hover td { background: rgba(255,255,255,0.03); }
+    .tbl .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .tbl .model-name { font-weight: 600; color: #e2e8f0; }
+
+    /* highlight / callout */
+    .callout {
+      border-radius: 10px; padding: 14px 18px;
+      font-size: 14px; line-height: 1.6; color: #cbd5e1;
+      border-left: 3px solid;
+    }
+    .callout.blue   { background: rgba(74,158,255,0.08);  border-color: #4a9eff; }
+    .callout.green  { background: rgba(52,211,153,0.08);  border-color: #34d399; }
+    .callout.purple { background: rgba(167,139,250,0.08); border-color: #a78bfa; }
+    .callout.orange { background: rgba(251,146,60,0.08);  border-color: #fb923c; }
+    .callout.yellow { background: rgba(250,204,21,0.08);  border-color: #facc15; }
+    .callout.red    { background: rgba(248,113,113,0.08); border-color: #f87171; }
+
+    /* colors */
+    .c-blue   { color: #4a9eff; }
+    .c-green  { color: #34d399; }
+    .c-purple { color: #a78bfa; }
+    .c-orange { color: #fb923c; }
+    .c-yellow { color: #facc15; }
+    .c-pink   { color: #f472b6; }
+    .c-red    { color: #f87171; }
+    .c-cyan   { color: #67e8f9; }
+    .c-muted  { color: #64748b; }
+
+    /* code */
+    code {
+      background: rgba(255,255,255,0.08); border-radius: 5px;
+      padding: 2px 7px; font-family: 'Consolas', monospace;
+      font-size: 13px; color: #67e8f9;
+    }
+    .code-block {
+      background: #0d1117; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 16px 20px;
+      font-family: 'Consolas', monospace; font-size: 13px;
+      color: #a3e635; line-height: 1.8;
+    }
+
+    /* list */
+    .ul { list-style: none; display: flex; flex-direction: column; gap: 11px; }
+    .ul li { display: flex; align-items: flex-start; gap: 10px; font-size: 15px; color: #cbd5e1; line-height: 1.5; }
+    .dot {
+      width: 24px; height: 24px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; flex-shrink: 0; margin-top: 1px;
+    }
+
+    /* multiplier visual */
+    .multi-row {
+      display: flex; align-items: center; gap: 0;
+      border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; overflow: hidden;
+    }
+    .multi-cell {
+      flex: 1; text-align: center; padding: 12px 8px;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .multi-cell:last-child { border-right: none; }
+    .multi-label { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #64748b; margin-bottom: 4px; }
+    .multi-val   { font-size: 20px; font-weight: 800; }
+
+    /* badge */
+    .badge {
+      display: inline-block; border-radius: 20px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    /* formula */
+    .formula {
+      background: rgba(255,255,255,0.03); border-radius: 10px;
+      padding: 14px 20px; font-family: 'Consolas', monospace;
+      font-size: 14px; color: #e2e8f0; line-height: 1.8;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .formula .comment { color: #64748b; font-size: 12px; }
+
+    /* nav */
+    .nav {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      display: flex; align-items: center; gap: 12px;
+      background: rgba(8,11,20,0.9); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 50px;
+      padding: 8px 20px; z-index: 100;
+    }
+    .nav button {
+      background: none; border: none; color: #64748b;
+      font-size: 18px; cursor: pointer; padding: 4px 8px;
+      border-radius: 6px; transition: all 0.15s;
+    }
+    .nav button:hover { color: #e2e8f0; background: rgba(255,255,255,0.08); }
+    .nav .ctr { font-size: 12px; color: #4a9eff; font-weight: 600; min-width: 56px; text-align: center; }
+    .nav .title-preview { font-size: 12px; color: #475569; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .progress { position: fixed; top: 0; left: 0; height: 2px; background: linear-gradient(90deg, #4a9eff, #a78bfa, #34d399); transition: width 0.3s; z-index: 200; }
+
+    /* slide-specific helpers */
+    .price-tag { font-size: 11px; font-weight: 700; letter-spacing: 1px; border-radius: 4px; padding: 2px 6px; }
+    .tier-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .tier-row:last-child { border-bottom: none; }
+
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    .flow-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; }
+    .flow-arrow { color: #334155; font-size: 18px; }
+  </style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+<div class="deck" id="deck">
+
+<!-- ═══════════════════════════════════════ SLIDE 1: COVER -->
+<div class="slide t-cover active" data-title="표지">
+  <div class="eyebrow">Claude API · 공식 문서 기반 심화 분석</div>
+  <h1>토큰 완전 해부</h1>
+  <p class="subtitle">
+    토큰의 정의와 측정 방식, 6가지 토큰 종류,<br>
+    전 모델 가격표, 프롬프트 캐싱 수학,<br>
+    Tool Use·Extended Thinking·Batch API 과금 구조까지
+  </p>
+  <div style="margin-top:36px; display:flex; gap:12px; flex-wrap:wrap;">
+    <span class="badge" style="border-color:rgba(74,158,255,.4); color:#4a9eff; background:rgba(74,158,255,.1);">2026 최신 가격 반영</span>
+    <span class="badge" style="border-color:rgba(167,139,250,.4); color:#a78bfa; background:rgba(167,139,250,.1);">platform.claude.com 공식 문서</span>
+    <span class="badge" style="border-color:rgba(52,211,153,.4); color:#34d399; background:rgba(52,211,153,.1);">실제 계산 예시 포함</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 2: 토큰이란 -->
+<div class="slide t-blue" data-title="토큰이란 무엇인가">
+  <h2>🔬 토큰이란 무엇인가?</h2>
+  <div class="cols c2" style="gap:28px; align-items:start;">
+    <div>
+      <div class="callout blue" style="margin-bottom:18px;">
+        토큰은 모델이 처리하는 텍스트의 <strong>최소 단위</strong>.<br>
+        영어 기준 <strong>1토큰 ≈ 4글자 ≈ 0.75단어</strong><br>
+        언어·내용에 따라 비율이 달라짐.
+      </div>
+      <div style="margin-bottom:16px; font-size:14px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">실제 변환 예시</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <div class="card card-sm" style="display:flex; justify-content:space-between;">
+          <span style="color:#94a3b8; font-size:14px;">"Hello World"</span>
+          <span class="c-blue" style="font-weight:700;">2~3 tokens</span>
+        </div>
+        <div class="card card-sm" style="display:flex; justify-content:space-between;">
+          <span style="color:#94a3b8; font-size:14px;">1,000 영어 단어</span>
+          <span class="c-green" style="font-weight:700;">~750 tokens</span>
+        </div>
+        <div class="card card-sm" style="display:flex; justify-content:space-between;">
+          <span style="color:#94a3b8; font-size:14px;">일반 웹페이지 (10kB)</span>
+          <span class="c-purple" style="font-weight:700;">~2,500 tokens</span>
+        </div>
+        <div class="card card-sm" style="display:flex; justify-content:space-between;">
+          <span style="color:#94a3b8; font-size:14px;">연구 논문 PDF (500kB)</span>
+          <span class="c-orange" style="font-weight:700;">~125,000 tokens</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="margin-bottom:14px; font-size:14px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase;">처리 흐름</div>
+      <div class="flow">
+        <div class="flow-box" style="color:#4a9eff;">입력 텍스트</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box" style="color:#a78bfa;">토크나이저</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box" style="color:#34d399;">토큰 ID 배열</div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-box" style="color:#fb923c;">모델 처리</div>
+      </div>
+      <div class="callout orange" style="margin-top:14px;">
+        <strong>⚠️ Opus 4.7 신규 토크나이저</strong><br>
+        이전 모델 대비 동일 텍스트에 <strong>최대 35% 더 많은 토큰</strong> 사용.<br>
+        Opus 4.7로 마이그레이션 시 비용 재산정 필요.
+      </div>
+      <div class="callout blue" style="margin-top:12px;">
+        컨텍스트 창 = <strong>최대 1M 토큰</strong><br>
+        (Opus 4.7, Opus 4.6, Sonnet 4.6 기준)
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 3: 토큰 종류 -->
+<div class="slide t-purple" data-title="토큰의 6가지 종류">
+  <h2>🗂️ 토큰의 6가지 종류</h2>
+  <div class="cols c3" style="gap:14px;">
+    <div class="token-block" style="border-color:#4a9eff;">
+      <div class="tb-label c-blue">① Base Input</div>
+      <div class="tb-name">기본 입력 토큰</div>
+      <div class="tb-desc">사용자가 보내는 프롬프트, 시스템 프롬프트, 이전 대화 내역 전체</div>
+      <div class="tb-price c-blue">기준 가격 (1×)</div>
+    </div>
+    <div class="token-block" style="border-color:#34d399;">
+      <div class="tb-label c-green">② Output</div>
+      <div class="tb-name">출력 토큰</div>
+      <div class="tb-desc">모델이 생성하는 응답 텍스트. 입력보다 비싼 경우가 많음 (최대 5×)</div>
+      <div class="tb-price c-green">3~5× 입력 단가</div>
+    </div>
+    <div class="token-block" style="border-color:#facc15;">
+      <div class="tb-label c-yellow">③ Cache Write</div>
+      <div class="tb-name">캐시 쓰기 토큰</div>
+      <div class="tb-desc">프롬프트 캐싱 시 처음 저장할 때 소비. 5분/1시간 두 종류 존재</div>
+      <div class="tb-price c-yellow">1.25× (5분) / 2× (1시간)</div>
+    </div>
+    <div class="token-block" style="border-color:#fb923c;">
+      <div class="tb-label c-orange">④ Cache Read</div>
+      <div class="tb-name">캐시 읽기 토큰</div>
+      <div class="tb-desc">캐시된 내용을 재사용할 때 소비. 매우 저렴 — 비용 절감의 핵심</div>
+      <div class="tb-price c-orange">0.1× 입력 단가 (90% 할인)</div>
+    </div>
+    <div class="token-block" style="border-color:#a78bfa;">
+      <div class="tb-label c-purple">⑤ Thinking</div>
+      <div class="tb-name">thinking 토큰</div>
+      <div class="tb-desc">Extended Thinking / Adaptive Thinking 시 내부 추론에 사용. 출력 토큰으로 과금</div>
+      <div class="tb-price c-purple">출력 토큰 단가 동일</div>
+    </div>
+    <div class="token-block" style="border-color:#f472b6;">
+      <div class="tb-label c-pink">⑥ Tool System</div>
+      <div class="tb-name">도구 시스템 토큰</div>
+      <div class="tb-desc">Tool Use 활성화 시 자동 추가되는 시스템 프롬프트 토큰 (모델별 346 등)</div>
+      <div class="tb-price c-pink">입력 토큰으로 과금</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 4: 모델별 가격표 -->
+<div class="slide t-teal" data-title="전 모델 가격표">
+  <h2>💰 전 모델 가격표 (per 1M tokens)</h2>
+  <table class="tbl">
+    <thead>
+      <tr>
+        <th>모델</th>
+        <th class="num">Input</th>
+        <th class="num">Cache Write 5m</th>
+        <th class="num">Cache Write 1h</th>
+        <th class="num">Cache Read</th>
+        <th class="num">Output</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="model-name">Claude Opus 4.7 <span style="font-size:10px; color:#f87171; font-weight:400;">★ 신규 토크나이저</span></td>
+        <td class="num c-blue">$5</td><td class="num c-yellow">$6.25</td><td class="num c-orange">$10</td><td class="num c-green">$0.50</td><td class="num c-purple">$25</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Opus 4.6</td>
+        <td class="num c-blue">$5</td><td class="num c-yellow">$6.25</td><td class="num c-orange">$10</td><td class="num c-green">$0.50</td><td class="num c-purple">$25</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Opus 4.5</td>
+        <td class="num c-blue">$5</td><td class="num c-yellow">$6.25</td><td class="num c-orange">$10</td><td class="num c-green">$0.50</td><td class="num c-purple">$25</td>
+      </tr>
+      <tr style="opacity:0.5;">
+        <td class="model-name">Claude Opus 4 / 4.1 <span style="font-size:10px;">deprecated</span></td>
+        <td class="num">$15</td><td class="num">$18.75</td><td class="num">$30</td><td class="num">$1.50</td><td class="num">$75</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Sonnet 4.6</td>
+        <td class="num c-blue">$3</td><td class="num c-yellow">$3.75</td><td class="num c-orange">$6</td><td class="num c-green">$0.30</td><td class="num c-purple">$15</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Sonnet 4.5 / 4</td>
+        <td class="num c-blue">$3</td><td class="num c-yellow">$3.75</td><td class="num c-orange">$6</td><td class="num c-green">$0.30</td><td class="num c-purple">$15</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Haiku 4.5</td>
+        <td class="num c-blue">$1</td><td class="num c-yellow">$1.25</td><td class="num c-orange">$2</td><td class="num c-green">$0.10</td><td class="num c-purple">$5</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Haiku 3.5</td>
+        <td class="num c-blue">$0.80</td><td class="num c-yellow">$1</td><td class="num c-orange">$1.60</td><td class="num c-green">$0.08</td><td class="num c-purple">$4</td>
+      </tr>
+      <tr>
+        <td class="model-name">Claude Haiku 3</td>
+        <td class="num c-blue">$0.25</td><td class="num c-yellow">$0.30</td><td class="num c-orange">$0.50</td><td class="num c-green">$0.03</td><td class="num c-purple">$1.25</td>
+      </tr>
+    </tbody>
+  </table>
+  <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+    <div class="callout orange" style="flex:1; font-size:13px; padding:10px 14px;">
+      <strong>Fast Mode (Opus 4.6 전용)</strong> — 6× 할증: Input <strong>$30</strong> / Output <strong>$150</strong> per MTok
+    </div>
+    <div class="callout blue" style="flex:1; font-size:13px; padding:10px 14px;">
+      <strong>데이터 레지던시 (US-only)</strong> — 1.1× 할증 (Opus 4.6, 4.7 이상 모델)
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 5: 프롬프트 캐싱 수학 -->
+<div class="slide t-green" data-title="프롬프트 캐싱 수학">
+  <h2>🧮 프롬프트 캐싱 — 수학으로 이해하기</h2>
+  <div class="cols c2" style="gap:24px; align-items:start;">
+    <div>
+      <div style="margin-bottom:14px;">
+        <div class="multi-row">
+          <div class="multi-cell">
+            <div class="multi-label">일반 입력</div>
+            <div class="multi-val c-blue">1.0×</div>
+          </div>
+          <div class="multi-cell">
+            <div class="multi-label">캐시 쓰기 5m</div>
+            <div class="multi-val c-yellow">1.25×</div>
+          </div>
+          <div class="multi-cell">
+            <div class="multi-label">캐시 쓰기 1h</div>
+            <div class="multi-val c-orange">2.0×</div>
+          </div>
+          <div class="multi-cell">
+            <div class="multi-label">캐시 읽기</div>
+            <div class="multi-val c-green">0.1×</div>
+          </div>
+        </div>
+      </div>
+      <div class="formula" style="margin-bottom:12px;">
+        <div class="comment">// 5분 캐시: 몇 번 읽어야 이득?</div>
+        <div>쓰기 비용 = 1.25 × 입력 단가</div>
+        <div>읽기 비용 = 0.10 × 입력 단가</div>
+        <div style="color:#facc15;">→ 1회 읽기만으로 본전 (1.25 &lt; 1.0 + 0.10)</div>
+        <br>
+        <div class="comment">// 1시간 캐시: 몇 번 읽어야 이득?</div>
+        <div>쓰기 비용 = 2.0 × 입력 단가</div>
+        <div style="color:#facc15;">→ 2회 읽기부터 이득 (2.0 &lt; 1.0×2 + 0.10×2)</div>
+      </div>
+    </div>
+    <div>
+      <div class="callout green" style="margin-bottom:12px;">
+        <strong>실제 절감 예시 (Sonnet 4.6 기준)</strong><br>
+        50k 토큰 시스템 프롬프트를 10회 반복 요청<br><br>
+        <strong>캐싱 없음:</strong> 50,000 × 10 × $3 / 1M = <span class="c-red">$1.50</span><br>
+        <strong>5m 캐싱:</strong> 50,000×$3.75 + 50,000×9×$0.30 / 1M = <span class="c-green">$0.322</span><br>
+        <strong>절감율: ~78%</strong>
+      </div>
+      <div class="callout blue">
+        <strong>캐싱 방법 2가지</strong><br>
+        • <code>cache_control</code> 최상위 설정 → <strong>자동 관리</strong> (권장)<br>
+        • 개별 content block에 설정 → <strong>세밀한 제어</strong>
+      </div>
+      <div class="callout yellow" style="margin-top:12px; font-size:13px;">
+        캐시 할인은 Batch API 50% 할인과 <strong>중첩 적용 가능</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 6: Batch API -->
+<div class="slide t-blue" data-title="Batch API — 50% 할인">
+  <h2>📦 Batch API — 비동기 50% 할인</h2>
+  <div class="cols c2" style="gap:24px; align-items:start;">
+    <div>
+      <table class="tbl" style="margin-bottom:16px;">
+        <thead>
+          <tr><th>모델</th><th class="num">Batch Input</th><th class="num">Batch Output</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="model-name">Opus 4.7 / 4.6 / 4.5</td><td class="num c-green">$2.50</td><td class="num c-green">$12.50</td></tr>
+          <tr><td class="model-name">Sonnet 4.6 / 4.5 / 4</td><td class="num c-green">$1.50</td><td class="num c-green">$7.50</td></tr>
+          <tr><td class="model-name">Haiku 4.5</td><td class="num c-green">$0.50</td><td class="num c-green">$2.50</td></tr>
+          <tr><td class="model-name">Haiku 3.5</td><td class="num c-green">$0.40</td><td class="num c-green">$2.00</td></tr>
+          <tr><td class="model-name">Haiku 3</td><td class="num c-green">$0.125</td><td class="num c-green">$0.625</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <ul class="ul">
+        <li>
+          <div class="dot" style="background:rgba(52,211,153,.2); color:#34d399;">✓</div>
+          <div><strong>모든 토큰 50% 할인</strong> — 실시간 응답이 불필요한 작업에 적합</div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(74,158,255,.2); color:#4a9eff;">⚡</div>
+          <div>대용량 비동기 처리 — 로그 분석, 대규모 문서 처리, 지원 티켓 분류 등</div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(250,204,21,.2); color:#facc15;">+</div>
+          <div>프롬프트 캐싱과 <strong>중첩 적용 가능</strong> — 최대 95% 이상 절감도 가능</div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(248,113,113,.2); color:#f87171;">✗</div>
+          <div>Fast Mode와는 <strong>중첩 불가</strong></div>
+        </li>
+      </ul>
+      <div class="callout green" style="margin-top:16px;">
+        <strong>실전 예시: 지원 티켓 10,000건 처리</strong><br>
+        평균 3,700 토큰/건 × Haiku 4.5 배치<br>
+        Input: 37M × $0.50 = <strong>$18.5</strong><br>
+        총 비용 ≈ <strong>~$37 / 10,000건</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 7: Tool Use 과금 -->
+<div class="slide t-purple" data-title="Tool Use 과금 구조">
+  <h2>🔧 Tool Use 과금 구조</h2>
+  <div class="cols c2" style="gap:24px; align-items:start;">
+    <div>
+      <div class="callout purple" style="margin-bottom:16px;">
+        Tool Use는 <strong>추가 토큰을 소비</strong>함.<br>
+        요청에 포함되는 tool 정의, 실행 결과, 자동 시스템 프롬프트 모두 입력 토큰으로 과금.
+      </div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">모델별 자동 시스템 프롬프트 토큰</div>
+      <table class="tbl" style="font-size:13px;">
+        <thead><tr><th>모델</th><th class="num">auto/none</th><th class="num">any/tool</th></tr></thead>
+        <tbody>
+          <tr><td>Claude 4.x 전 모델</td><td class="num c-yellow">346</td><td class="num c-orange">313</td></tr>
+          <tr><td>Haiku 3.5</td><td class="num c-yellow">264</td><td class="num c-orange">340</td></tr>
+          <tr><td>Opus 3 (deprecated)</td><td class="num c-yellow">530</td><td class="num c-orange">281</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">도구별 추가 토큰</div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <div class="tier-row">
+          <span style="color:#e2e8f0;">Bash 도구</span>
+          <span class="c-yellow" style="font-weight:700;">+245 input tokens</span>
+        </div>
+        <div class="tier-row">
+          <span style="color:#e2e8f0;">Text Editor (4.x)</span>
+          <span class="c-yellow" style="font-weight:700;">+700 input tokens</span>
+        </div>
+        <div class="tier-row">
+          <span style="color:#e2e8f0;">Computer Use (4.x)</span>
+          <span class="c-yellow" style="font-weight:700;">+735 input tokens + 466~499 시스템</span>
+        </div>
+        <div class="tier-row">
+          <span style="color:#e2e8f0;">Web Search</span>
+          <span class="c-orange" style="font-weight:700;">$10 / 1,000회 + 토큰</span>
+        </div>
+        <div class="tier-row">
+          <span style="color:#e2e8f0;">Web Fetch</span>
+          <span class="c-green" style="font-weight:700;">추가 요금 없음 (토큰만)</span>
+        </div>
+        <div class="tier-row">
+          <span style="color:#e2e8f0;">Code Execution (단독)</span>
+          <span class="c-pink" style="font-weight:700;">$0.05/시간 (1,550h 무료)</span>
+        </div>
+      </div>
+      <div class="callout green" style="font-size:13px;">
+        <strong>Code Execution 무료 조건</strong><br>
+        <code>web_search</code> 또는 <code>web_fetch</code>와 함께 사용하면 실행 비용 무료
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 8: Extended Thinking -->
+<div class="slide t-orange" data-title="Extended Thinking 토큰">
+  <h2>🧠 Thinking 토큰 과금</h2>
+  <div class="cols c2" style="gap:24px; align-items:start;">
+    <div>
+      <div class="callout orange" style="margin-bottom:16px;">
+        Thinking 토큰은 <strong>출력 토큰</strong>으로 과금.<br>
+        Claude 4.x에서는 Extended Thinking 대신 <strong>Adaptive Thinking</strong> 사용.<br>
+        기본 예산 = 수만 토큰 (모델별 상이)
+      </div>
+      <div class="formula">
+        <div class="comment">// Sonnet 4.6 기준 1회 요청 예시</div>
+        <div>Input:   5,000 tokens × $3   = $0.015</div>
+        <div>Thinking: 20,000 tokens × $15 = $0.300</div>
+        <div>Output:   1,000 tokens × $15  = $0.015</div>
+        <div style="color:#facc15; margin-top:8px;">Total = $0.330 (thinking이 91%!)</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">Thinking 비용 제어 방법</div>
+      <ul class="ul">
+        <li>
+          <div class="dot" style="background:rgba(251,146,60,.2); color:#fb923c;">1</div>
+          <div><code>/effort low</code> — 노력 수준 낮춤 → thinking 예산 축소</div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(251,146,60,.2); color:#fb923c;">2</div>
+          <div><code>MAX_THINKING_TOKENS=8000</code> 환경변수로 예산 하드 캡</div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(251,146,60,.2); color:#fb923c;">3</div>
+          <div><code>/config</code>에서 thinking 완전 비활성화</div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(52,211,153,.2); color:#34d399;">✓</div>
+          <div>복잡한 아키텍처/멀티스텝 추론에서는 thinking이 오히려 재작업 비용 절감</div>
+        </li>
+      </ul>
+      <div class="callout yellow" style="margin-top:14px; font-size:13px;">
+        Thinking 토큰은 캐시 불가 — 매 요청마다 새로 소비됨
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 9: Managed Agents 과금 -->
+<div class="slide t-teal" data-title="Managed Agents 과금">
+  <h2>🤖 Claude Managed Agents 과금</h2>
+  <div class="cols c2" style="gap:24px; align-items:start;">
+    <div>
+      <div class="callout blue" style="margin-bottom:16px;">
+        Managed Agents는 <strong>토큰 + 세션 런타임</strong> 2가지로 과금.<br>
+        Batch API, Fast Mode, 데이터 레지던시 할증은 <strong>적용 불가</strong>.
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="ct c-pink">세션 런타임 요금</div>
+        <div class="cv c-pink">$0.08 / 시간</div>
+        <div class="cd">상태가 <code>running</code>인 동안만 측정.<br><code>idle</code>, <code>rescheduling</code>, <code>terminated</code> 상태는 미포함.</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">실제 계산 예시 (Opus 4.7, 1시간 코딩 세션)</div>
+      <div class="formula" style="margin-bottom:12px;">
+        <div class="comment">// 캐싱 없는 경우</div>
+        <div>Input  50k × $5/M   = $0.250</div>
+        <div>Output 15k × $25/M  = $0.375</div>
+        <div>Runtime 1h × $0.08  = $0.080</div>
+        <div style="color:#facc15;">합계 = $0.705</div>
+      </div>
+      <div class="formula">
+        <div class="comment">// 40k 토큰이 캐시 읽기인 경우</div>
+        <div>Uncached 10k × $5/M  = $0.050</div>
+        <div>CacheRead 40k × $0.5/M = $0.020</div>
+        <div>Output 15k × $25/M   = $0.375</div>
+        <div>Runtime 1h × $0.08   = $0.080</div>
+        <div style="color:#34d399;">합계 = $0.525 (25% 절감)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 10: 할인 중첩 구조 -->
+<div class="slide t-blue" data-title="할인/할증 중첩 구조">
+  <h2>🔀 할인·할증 중첩 구조</h2>
+  <div class="cols c2" style="gap:24px; align-items:start;">
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:14px;">중첩 가능 조합</div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;">
+        <div class="card card-sm" style="border-color:rgba(52,211,153,.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#e2e8f0; font-size:14px;">Batch × Cache Read</span>
+            <span class="c-green" style="font-weight:700;">0.5 × 0.1 = <strong>5%</strong> 요금</span>
+          </div>
+        </div>
+        <div class="card card-sm" style="border-color:rgba(52,211,153,.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#e2e8f0; font-size:14px;">Fast Mode × Cache Write</span>
+            <span class="c-orange" style="font-weight:700;">6 × 1.25 = 7.5× 요금</span>
+          </div>
+        </div>
+        <div class="card card-sm" style="border-color:rgba(52,211,153,.3);">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#e2e8f0; font-size:14px;">Data Residency × Cache</span>
+            <span class="c-yellow" style="font-weight:700;">1.1× 추가 할증</span>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:10px;">중첩 불가 조합</div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        <div class="callout red" style="font-size:13px; padding:8px 14px;">Batch API ✗ Fast Mode</div>
+        <div class="callout red" style="font-size:13px; padding:8px 14px;">Managed Agents ✗ Batch / Fast Mode / Data Residency</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:13px; font-weight:700; color:#94a3b8; letter-spacing:1px; text-transform:uppercase; margin-bottom:12px;">최적 비용 조합 전략</div>
+      <ul class="ul">
+        <li>
+          <div class="dot" style="background:rgba(52,211,153,.2); color:#34d399;">1</div>
+          <div><strong>Haiku + Batch + Cache Read</strong> — 최고 절감 조합<br><span class="c-muted" style="font-size:13px;">Haiku 4.5 기준 $0.005/MTok (입력 기준)</span></div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(74,158,255,.2); color:#4a9eff;">2</div>
+          <div><strong>Sonnet + Cache (5m)</strong> — 반복 컨텍스트 많을 때<br><span class="c-muted" style="font-size:13px;">1회 읽기만으로 쓰기 비용 회수</span></div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(250,204,21,.2); color:#facc15;">3</div>
+          <div><strong>Opus + Thinking 제한</strong> — 정확도 유지하며 비용 제어<br><span class="c-muted" style="font-size:13px;">MAX_THINKING_TOKENS=8000</span></div>
+        </li>
+        <li>
+          <div class="dot" style="background:rgba(167,139,250,.2); color:#a78bfa;">4</div>
+          <div><strong>서브에이전트 Haiku 지정</strong> — 단순 작업 분리<br><span class="c-muted" style="font-size:13px;">subagent config에서 model: haiku 설정</span></div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ SLIDE 11: 요약 치트시트 -->
+<div class="slide t-cover" data-title="요약 치트시트">
+  <h2>📋 토큰 과금 치트시트</h2>
+  <div class="cols c3" style="gap:14px;">
+    <div class="card">
+      <div class="ct c-blue">토큰 단위</div>
+      <ul class="ul" style="font-size:13px; gap:7px;">
+        <li><div class="dot" style="background:rgba(74,158,255,.15); color:#4a9eff; font-size:10px;">≈</div><div>1 token ≈ 4글자 (영어)</div></li>
+        <li><div class="dot" style="background:rgba(74,158,255,.15); color:#4a9eff; font-size:10px;">M</div><div>가격 단위 = MTok (백만 토큰)</div></li>
+        <li><div class="dot" style="background:rgba(74,158,255,.15); color:#4a9eff; font-size:10px;">!</div><div>Opus 4.7: 동일 텍스트에 35% 더 많은 토큰</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct c-green">가장 저렴한 조합</div>
+      <ul class="ul" style="font-size:13px; gap:7px;">
+        <li><div class="dot" style="background:rgba(52,211,153,.15); color:#34d399; font-size:10px;">$</div><div>Haiku 3 Batch: $0.125 Input / $0.625 Output</div></li>
+        <li><div class="dot" style="background:rgba(52,211,153,.15); color:#34d399; font-size:10px;">+</div><div>Cache Read 적용 시 추가 90% 절감</div></li>
+        <li><div class="dot" style="background:rgba(52,211,153,.15); color:#34d399; font-size:10px;">≈</div><div>최소 $0.0125/MTok 가능</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct c-orange">가장 비싼 조합</div>
+      <ul class="ul" style="font-size:13px; gap:7px;">
+        <li><div class="dot" style="background:rgba(251,146,60,.15); color:#fb923c; font-size:10px;">!</div><div>Opus 4.7 Fast Mode: $30 Input / $150 Output</div></li>
+        <li><div class="dot" style="background:rgba(251,146,60,.15); color:#fb923c; font-size:10px;">+</div><div>Thinking 토큰 출력 단가 동일하게 추가 소비</div></li>
+        <li><div class="dot" style="background:rgba(251,146,60,.15); color:#fb923c; font-size:10px;">+</div><div>Data Residency 1.1× 추가 가능</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct c-purple">Tool Use 주의사항</div>
+      <ul class="ul" style="font-size:13px; gap:7px;">
+        <li><div class="dot" style="background:rgba(167,139,250,.15); color:#a78bfa; font-size:10px;">+</div><div>자동 시스템 프롬프트 346토큰 기본 추가</div></li>
+        <li><div class="dot" style="background:rgba(167,139,250,.15); color:#a78bfa; font-size:10px;">$</div><div>Web Search = $10/1,000회 별도 과금</div></li>
+        <li><div class="dot" style="background:rgba(167,139,250,.15); color:#a78bfa; font-size:10px;">0</div><div>Web Fetch = 추가 요금 없음</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct c-yellow">Cache 핵심 공식</div>
+      <ul class="ul" style="font-size:13px; gap:7px;">
+        <li><div class="dot" style="background:rgba(250,204,21,.15); color:#facc15; font-size:10px;">5m</div><div>1회 읽기 = 손익분기점</div></li>
+        <li><div class="dot" style="background:rgba(250,204,21,.15); color:#facc15; font-size:10px;">1h</div><div>2회 읽기부터 이득</div></li>
+        <li><div class="dot" style="background:rgba(250,204,21,.15); color:#facc15; font-size:10px;">×</div><div>Batch와 중첩 시 최대 95% 절감</div></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="ct c-pink">Managed Agents</div>
+      <ul class="ul" style="font-size:13px; gap:7px;">
+        <li><div class="dot" style="background:rgba(244,114,182,.15); color:#f472b6; font-size:10px;">T</div><div>토큰 + 세션 런타임 $0.08/h</div></li>
+        <li><div class="dot" style="background:rgba(244,114,182,.15); color:#f472b6; font-size:10px;">✗</div><div>Batch/Fast Mode 적용 불가</div></li>
+        <li><div class="dot" style="background:rgba(244,114,182,.15); color:#f472b6; font-size:10px;">✓</div><div>idle 상태 시간은 미과금</div></li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<div class="nav">
+  <button onclick="go(-1)">&#8592;</button>
+  <div class="ctr" id="ctr">1 / 11</div>
+  <div class="title-preview" id="tprev"></div>
+  <button onclick="go(1)">&#8594;</button>
+</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const ctr    = document.getElementById('ctr');
+  const tprev  = document.getElementById('tprev');
+  const prog   = document.getElementById('progress');
+  let cur = 0;
+
+  function show(n) {
+    slides[cur].classList.remove('active');
+    cur = (n + slides.length) % slides.length;
+    slides[cur].classList.add('active');
+    ctr.textContent  = `${cur + 1} / ${slides.length}`;
+    tprev.textContent = slides[(cur + 1) % slides.length].dataset.title || '';
+    prog.style.width = `${((cur + 1) / slides.length) * 100}%`;
+  }
+
+  function go(d) { show(cur + d); }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')  go(-1);
+  });
+
+  show(0);
+</script>
+</body>
+</html>
